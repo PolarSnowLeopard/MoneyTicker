@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Money Ticker - 工作记录</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        min-height: 100vh;
+        color: #2d3748;
+      }
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        font-size: 28px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+      }
+      .header p {
+        color: #718096;
+        font-size: 14px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        background: #fff;
+        padding: 6px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+      .tab {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .tab:hover {
+        background: #f1f5f9;
+      }
+      .tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* 打卡记录表格 */
+      .records-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .records-table th,
+      .records-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .records-table th {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+      .records-table td {
+        font-size: 14px;
+      }
+      .records-table tr:hover {
+        background: #f8fafc;
+      }
+      .records-table input[type="time"],
+      .records-table input[type="date"] {
+        padding: 6px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .records-table input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+      }
+
+      /* 日报状态标签 */
+      .report-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .report-badge.done {
+        background: #dcfce7;
+        color: #16a34a;
+      }
+      .report-badge.pending {
+        background: #fef3c7;
+        color: #d97706;
+      }
+      .report-badge:hover {
+        opacity: 0.8;
+      }
+
+      /* 日报/周报列表 */
+      .report-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .report-item {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .report-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+      }
+      .report-item.active {
+        border-color: #667eea;
+        background: #f5f3ff;
+      }
+      .report-item-date {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 4px;
+      }
+      .report-item-preview {
+        font-size: 13px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* 编辑器区域 */
+      .editor-section {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+        margin-top: 20px;
+      }
+      .report-selector {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .report-selector label {
+        font-size: 14px;
+        color: #64748b;
+      }
+      .report-selector input,
+      .report-selector select {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      .editor {
+        width: 100%;
+        min-height: 250px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-family: "SF Mono", Monaco, monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+      }
+      .editor:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      /* 新增记录表单 */
+      .add-record-form {
+        display: none;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .add-record-form.show {
+        display: block;
+      }
+      .form-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .form-row label {
+        font-size: 13px;
+        color: #64748b;
+      }
+      .form-row input {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+
+      /* 按钮 */
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+      }
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+      }
+      .btn-secondary {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      .btn-danger {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .btn-danger:hover {
+        background: #fecaca;
+      }
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      /* 导入导出区域 */
+      .import-export {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .file-input {
+        display: none;
+      }
+
+      /* 隐藏面板 */
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
+
+      /* Toast 提示 */
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #334155;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 1000;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>💰 Money Ticker</h1>
+        <p>工作记录管理</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="records">📊 打卡记录</button>
+        <button class="tab" data-tab="daily">📝 日报</button>
+        <button class="tab" data-tab="weekly">📋 周报</button>
+        <button class="tab" data-tab="backup">💾 备份</button>
+      </div>
+
+      <!-- 打卡记录面板 -->
+      <div id="records" class="panel active">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 打卡记录</div>
+            <button class="btn-secondary btn-sm" id="toggleAddForm">
+              ➕ 新增记录
+            </button>
+          </div>
+
+          <!-- 新增记录表单 -->
+          <div class="add-record-form" id="addRecordForm">
+            <div class="form-row">
+              <label>日期</label>
+              <input type="date" id="newDate" />
+              <label>上班</label>
+              <input type="time" id="newStart" value="09:00" />
+              <label>下班</label>
+              <input type="time" id="newEnd" value="18:00" />
+              <button class="btn-primary btn-sm" id="addRecord">添加</button>
+              <button class="btn-secondary btn-sm" id="cancelAdd">取消</button>
+            </div>
+          </div>
+
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>上班</th>
+                <th>下班</th>
+                <th>工时</th>
+                <th>收入</th>
+                <th>日报</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+          <div id="emptyRecords" class="empty-state">
+            暂无打卡记录，点击上方「新增记录」添加
+          </div>
+        </div>
+      </div>
+
+      <!-- 日报面板 -->
+      <div id="daily" class="panel">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📝 日报总览</div>
+            <span style="color: #64748b; font-size: 13px" id="dailyCount"
+              >共 0 篇</span
+            >
+          </div>
+          <div class="report-list" id="dailyList">
+            <div class="empty-state">暂无日报</div>
+          </div>
+
+          <div class="editor-section">
+            <div class="report-selector">
+              <label>编辑日期：</label>
+              <input type="date" id="dailyDate" />
+              <button class="btn-secondary btn-sm" id="newDailyReport">
+                📄 新建日报
+              </button>
+            </div>
+            <textarea
+              class="editor"
+              id="dailyEditor"
+              placeholder="# 今日工作内容&#10;&#10;- 完成了...&#10;- 处理了...&#10;&#10;# 明日计划&#10;&#10;- ..."
+            ></textarea>
+            <div class="btn-row">
+              <button class="btn-primary" id="saveDailyReport">
+                💾 保存日报
+              </button>
+              <button class="btn-secondary" id="exportDailyReport">
+                📤 导出 Markdown
+              </button>
+              <button class="btn-danger" id="deleteDailyReport">🗑️ 删除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 周报面板 -->
+      <div id="weekly" class="panel">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 周报总览</div>
+            <span style="color: #64748b; font-size: 13px" id="weeklyCount"
+              >共 0 篇</span
+            >
+          </div>
+          <div class="report-list" id="weeklyList">
+            <div class="empty-state">暂无周报</div>
+          </div>
+
+          <div class="editor-section">
+            <div class="report-selector">
+              <label>编辑周：</label>
+              <input type="week" id="weeklyDate" />
+              <button class="btn-secondary btn-sm" id="newWeeklyReport">
+                📄 新建周报
+              </button>
+            </div>
+            <textarea
+              class="editor"
+              id="weeklyEditor"
+              placeholder="# 本周工作总结&#10;&#10;## 完成的工作&#10;- ...&#10;&#10;## 遇到的问题&#10;- ...&#10;&#10;## 下周计划&#10;- ..."
+            ></textarea>
+            <div class="btn-row">
+              <button class="btn-primary" id="saveWeeklyReport">
+                💾 保存周报
+              </button>
+              <button class="btn-secondary" id="exportWeeklyReport">
+                📤 导出 Markdown
+              </button>
+              <button class="btn-danger" id="deleteWeeklyReport">
+                🗑️ 删除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备份面板 -->
+      <div id="backup" class="panel">
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 16px">💾 数据备份</div>
+          <p style="color: #64748b; font-size: 14px; margin-bottom: 16px">
+            导出所有数据（打卡记录、日报、周报）为 JSON
+            文件，可用于备份或迁移到其他设备。
+          </p>
+          <div class="import-export">
+            <button class="btn-primary" id="exportAll">📤 导出全部数据</button>
+            <button class="btn-secondary" id="importBtn">📥 导入数据</button>
+            <input
+              type="file"
+              id="importFile"
+              class="file-input"
+              accept=".json"
+            />
+            <button class="btn-danger" id="clearAll">🗑️ 清空所有数据</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 16px">📊 数据统计</div>
+          <div
+            id="stats"
+            style="color: #64748b; font-size: 14px; line-height: 2"
+          >
+            加载中...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="history.js"></script>
+  </body>
+</html>

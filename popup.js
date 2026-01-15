@@ -175,9 +175,43 @@ function clockIn() {
 }
 
 function clockOut() {
+  // 保存今日打卡记录
+  saveRecord();
   config.flexStartTime = null;
   config.flexDate = null;
   chrome.storage.local.set(config, calculate);
+}
+
+// 获取日期字符串 YYYY-MM-DD
+function getDateStr(date = new Date()) {
+  return date.toISOString().split('T')[0];
+}
+
+// 保存打卡记录
+function saveRecord() {
+  if (!config.flexStartTime) return;
+  
+  const dateStr = getDateStr();
+  const startTime = new Date(config.flexStartTime);
+  const endTime = new Date();
+  const workHours = Math.min((endTime - startTime) / 1000 / 3600, config.workHours);
+  const earnings = (workHours / config.workHours) * config.dailySalary;
+  
+  chrome.storage.local.get({ records: {} }, (data) => {
+    data.records[dateStr] = {
+      mode: 'flex',
+      startTime: formatTime(startTime),
+      endTime: formatTime(endTime),
+      workHours: workHours.toFixed(2),
+      earnings: earnings.toFixed(2)
+    };
+    chrome.storage.local.set({ records: data.records });
+  });
+}
+
+// 打开历史记录页面
+function openHistory() {
+  chrome.tabs.create({ url: 'history.html' });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -192,4 +226,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('clockIn').addEventListener('click', clockIn);
   document.getElementById('clockOut').addEventListener('click', clockOut);
+  document.getElementById('openHistory').addEventListener('click', openHistory);
 });
