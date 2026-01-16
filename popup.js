@@ -157,8 +157,12 @@ function saveConfig() {
   });
 }
 
-// 弹性模式 - 根据输入的时间开始计时
+// 弹性模式 - 根据输入的时间开始计时（同时自动保存设置）
 function clockIn() {
+  // 先保存弹性模式的设置
+  config.dailySalary = Number(document.getElementById('dailySalary').value) || config.dailySalary;
+  config.workHours = Number(document.getElementById('workHours').value) || config.workHours;
+  
   const timeInput = document.getElementById('flexStartInput').value;
   const startTime = parseTime(timeInput);
   
@@ -214,13 +218,71 @@ function openHistory() {
   chrome.tabs.create({ url: 'history.html' });
 }
 
+// 检查是否需要自动保存（打开popup时检查）
+function checkAutoSave() {
+  const today = getDateStr();
+  
+  chrome.storage.local.get({ records: {} }, (data) => {
+    if (config.mode === 'fixed') {
+      const endTime = parseTime(config.endTime);
+      const now = new Date();
+      
+      if (now > endTime) {
+        // 固定模式下班了，自动保存
+        const startTime = parseTime(config.startTime);
+        const dailySalary = config.salary / config.workDays;
+        const workHours = (endTime - startTime) / 1000 / 3600;
+        
+        data.records[today] = {
+          mode: 'fixed',
+          startTime: config.startTime,
+          endTime: config.endTime,
+          workHours: workHours.toFixed(2),
+          earnings: dailySalary.toFixed(2)
+        };
+        chrome.storage.local.set({ records: data.records });
+      }
+    } else if (config.mode === 'flex' && config.flexStartTime && config.flexDate === getTodayStr()) {
+      const totalWorkSeconds = config.workHours * 3600;
+      const workedSeconds = (Date.now() - config.flexStartTime) / 1000;
+      
+      if (workedSeconds >= totalWorkSeconds) {
+        // 弹性模式工时满了，自动保存
+        const startTime = new Date(config.flexStartTime);
+        const endTime = new Date(config.flexStartTime + totalWorkSeconds * 1000);
+        
+        data.records[today] = {
+          mode: 'flex',
+          startTime: formatTime(startTime),
+          endTime: formatTime(endTime),
+          workHours: config.workHours.toFixed(2),
+          earnings: config.dailySalary.toFixed(2)
+        };
+        
+        config.flexStartTime = null;
+        config.flexDate = null;
+        chrome.storage.local.set({ 
+          records: data.records,
+          flexStartTime: null,
+          flexDate: null
+        }, calculate);
+      }
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
   setInterval(calculate, 1000);
   
+  // 打开popup时检查是否需要自动保存
+  setTimeout(checkAutoSave, 500);
+  
   document.getElementById('save').addEventListener('click', saveConfig);
   document.getElementById('mode').addEventListener('change', () => {
     config.mode = document.getElementById('mode').value;
+    // 切换模式时自动保存
+    chrome.storage.local.set({ mode: config.mode });
     toggleModeUI();
     calculate();
   });
