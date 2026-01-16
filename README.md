@@ -11,7 +11,7 @@
 
 ## 📦 安装
 
-1. [下载最新版本](https://github.com/PolarSnowLeopard/MoneyTicker/releases/tag/v1.0.0#:~:text=MoneyTicker%2Dv1.0.0.zip) 并解压
+1. [下载最新版本](https://github.com/PolarSnowLeopard/MoneyTicker/releases/latest) 并解压
 2. 打开 Edge 浏览器，访问 `edge://extensions/`
 3. 开启右上角「开发人员模式」
 4. 点击「加载解压缩的扩展」
@@ -29,5 +29,3 @@
 ## 📄 License
 
 MIT
-
-
